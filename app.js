@@ -170,6 +170,9 @@ const sessionsOf = id => state.sessionsByMember.get(id) || [];
 const paymentsOf = id => state.paymentsByMember.get(id) || [];
 const monthlyPayment = (id, period) => paymentsOf(id).find(p => p.kind === 'monthly' && p.period === period) || null;
 const admissionPayment = id => paymentsOf(id).find(p => p.kind === 'admission') || null;
+// Members who were already in the club when the app started don't owe an admission fee (set in 6_waive_admission.sql).
+const admissionWaived = id => !!(state.details.get(id) || {}).admission_waived;
+const isAdmissionDue = id => !admissionPayment(id) && !admissionWaived(id);
 function lastVisit(id){
   const set = state.attendance.get(id);
   if(!set || !set.size) return null;
@@ -606,7 +609,7 @@ function renderOverview(){
     const ia = inactiveInfo(m);
     if(ia.flagged) tags.push(`<span class="attn-tag inactive">${ia.label}</span>`);
     if(!monthlyPayment(m.id, cur)) tags.push('<span class="attn-tag unpaid">Unpaid</span>');
-    if(!admissionPayment(m.id)) tags.push('<span class="attn-tag unpaid">Admission due</span>');
+    if(isAdmissionDue(m.id)) tags.push('<span class="attn-tag unpaid">Admission due</span>');
     return { m, tags, ia };
   }).filter(x=>x.tags.length);
   $('attentionList').innerHTML = flagged.length
@@ -715,14 +718,14 @@ function renderFeesTable(){
     const p = monthlyPayment(m.id, period);
     if(f === 'paid') return !!p;
     if(f === 'unpaid') return !p;
-    if(f === 'admission') return !admissionPayment(m.id);
+    if(f === 'admission') return isAdmissionDue(m.id);
     return true;
   });
   const box = $('feesList');
   if(!list.length){ box.innerHTML = '<p class="panel-note">No members match this search or filter.</p>'; return; }
   box.innerHTML = list.map(m=>{
     const p = monthlyPayment(m.id, period);
-    const admissionDue = !admissionPayment(m.id);
+    const admissionDue = isAdmissionDue(m.id);
     const meta = p
       ? `<span style="color:#3E7A3E;font-weight:500;">Paid ${rs(p.amount)}</span> · ${METHOD_LABEL[p.method]} · ${fmtDayShort(p.paid_on)}`
       : 'Not paid';
@@ -746,7 +749,7 @@ let payCtx = null;
 function openPaymentModal(memberId, kind, period){
   const m = memberById(memberId); if(!m) return;
   payCtx = { memberId, kind, period: kind === 'monthly' ? period : null, file:null };
-  const admissionDue = !admissionPayment(memberId);
+  const admissionDue = isAdmissionDue(memberId);
   $('pay-title').textContent = kind === 'monthly' ? 'Record monthly fee' : 'Record admission fee';
   $('pay-sub').textContent = kind === 'monthly' ? `${m.name} · ${fmtMonth(period)}` : m.name;
   $('pay-amount').value = kind === 'monthly' ? state.settings.monthly_fee : state.settings.admission_fee;
@@ -839,7 +842,9 @@ async function removePayment(paymentId){
 async function viewReceipt(paymentId){
   const p = state.payments.find(x=>x.id === paymentId);
   if(!p || !p.receipt_path) return;
-  const win = window.open('', '_blank'); // open first; phones block pop-ups opened after a wait
+  // Inside the Android app there are no pop-up windows; the receipt opens in the phone's browser instead.
+  const inApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const win = inApp ? null : window.open('', '_blank'); // open first; phones block pop-ups opened after a wait
   const { data, error } = await sb.storage.from('receipts').createSignedUrl(p.receipt_path, 120);
   if(error){
     if(win) win.close();
@@ -943,7 +948,7 @@ function openCoachProfile(id){
     ${m.active ? '' : `<p class="archived-note" style="width:100%;">Archived${m.left_on ? ' on ' + fmtDay(m.left_on) : ''}. Hidden from the roster.</p>`}
     <button class="btn-secondary small-btn" onclick="openMemberForm('${m.id}')">Edit details</button>
     ${m.active && !monthlyPayment(m.id, cur) ? `<button class="btn-secondary small-btn" onclick="openPaymentModal('${m.id}','monthly','${cur}')">Record ${LONG_MONTHS[TODAY.getMonth()]} fee</button>` : ''}
-    ${!admissionPayment(m.id) ? `<button class="btn-secondary small-btn" onclick="openPaymentModal('${m.id}','admission')">Record admission fee</button>` : ''}
+    ${isAdmissionDue(m.id) ? `<button class="btn-secondary small-btn" onclick="openPaymentModal('${m.id}','admission')">Record admission fee</button>` : ''}
     <button class="btn-secondary small-btn" onclick="setArchived('${m.id}', ${m.active})">${m.active ? 'Archive' : 'Restore member'}</button>`;
 
   const recent = recentAttendance(m, ATTENDANCE_WINDOW);
@@ -976,6 +981,8 @@ function openCoachProfile(id){
         </div>
       </div>`).join('')
     : '<p class="attn-empty">No payments recorded yet.</p>';
+  if(admissionWaived(id) && !admissionPayment(id))
+    $('cpPayments').insertAdjacentHTML('afterbegin', '<p class="attn-empty">Admission fee waived (joined before the app).</p>');
 
   $('cp-personal').innerHTML =
     mdItem('Date of birth', d.dob ? fmtDay(d.dob) : '') + mdItem('Age', ageFrom(d.dob)) +
