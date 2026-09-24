@@ -5,8 +5,21 @@
    Coach: members, attendance, fees, progress, settings.
    ===================================================================== */
 
+// Give up on any request that takes longer than 15 seconds, so the app never hangs.
+function fetchWithTimeout(url, options){
+  const ctrl = new AbortController();
+  const timer = setTimeout(()=>ctrl.abort(), 15000);
+  if(options && options.signal) options.signal.addEventListener('abort', ()=>ctrl.abort());
+  return fetch(url, { ...(options || {}), signal: ctrl.signal }).finally(()=>clearTimeout(timer));
+}
+if(!window.supabase || !window.DK_CONFIG){
+  document.getElementById('rosterGrid').innerHTML =
+    '<p class="panel-note">The app files didn\'t load properly. Refresh the page; if this keeps happening, re-upload the whole folder.</p>';
+  throw new Error('Missing vendor/supabase.js or config.js');
+}
 const sb = supabase.createClient(window.DK_CONFIG.supabaseUrl, window.DK_CONFIG.supabaseAnonKey, {
-  auth: { persistSession: true, autoRefreshToken: true }
+  auth: { persistSession: true, autoRefreshToken: true },
+  global: { fetch: fetchWithTimeout }
 });
 
 // ---------- constants ----------
@@ -364,6 +377,12 @@ function openBoxer(id){
 // NAVIGATION (hash routes, so the phone's back button works)
 // =====================================================================
 let inAppNavs = 0;
+let appReady = false;   // true once the first data load has finished
+window.addEventListener('hashchange', ()=>{
+  inAppNavs++;
+  if(appReady) route();
+  else if(location.hash === '#/login') showView('login');   // sign-in never waits for data
+});
 function showView(name){
   const target = $('view-' + name);
   if(target.classList.contains('active')) return;
@@ -458,6 +477,7 @@ async function tryLogin(){
     await loadPrivate();
     renderRoster();
     buildDashboard();
+    appReady = true;
     go('#/dashboard/overview', true);
   } finally {
     btn.disabled = false; btn.textContent = 'Sign in';
@@ -1238,8 +1258,8 @@ async function init(){
   }
   if(ok || state.coach) renderRoster();
   if(state.coach) buildDashboard();
+  appReady = true;
   route();
-  window.addEventListener('hashchange', ()=>{ inAppNavs++; route(); });
 
   sb.auth.onAuthStateChange(event=>{
     if(event === 'SIGNED_OUT' && state.coach){
