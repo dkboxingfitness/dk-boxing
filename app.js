@@ -13,9 +13,11 @@ function fetchWithTimeout(url, options){
   return fetch(url, { ...(options || {}), signal: ctrl.signal }).finally(()=>clearTimeout(timer));
 }
 if(!window.supabase || !window.DK_CONFIG){
+  const missing = [!window.supabase && 'vendor/supabase.js', !window.DK_CONFIG && 'config.js'].filter(Boolean).join(' and ');
   document.getElementById('rosterGrid').innerHTML =
-    '<p class="panel-note">The app files didn\'t load properly. Refresh the page; if this keeps happening, re-upload the whole folder.</p>';
-  throw new Error('Missing vendor/supabase.js or config.js');
+    '<p class="panel-note">The app couldn\'t start because <b>' + missing + '</b> didn\'t load. ' +
+    'Check that file is in the uploaded folder, then re-upload the whole folder.</p>';
+  throw new Error('Missing ' + missing);
 }
 const sb = supabase.createClient(window.DK_CONFIG.supabaseUrl, window.DK_CONFIG.supabaseAnonKey, {
   auth: { persistSession: true, autoRefreshToken: true },
