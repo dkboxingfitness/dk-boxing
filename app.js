@@ -527,10 +527,11 @@ function barChart(data){
   const w = 320, h = 150, padL = 8, padR = 8, padB = 22, padT = 16;
   const chartW = w - padL - padR, chartH = h - padT - padB;
   const max = Math.max(...data.map(d=>d.value), 1) * 1.15;
-  const gap = chartW / data.length, barW = gap * 0.55;
+  const gap = chartW / Math.max(data.length, 6), barW = gap * 0.55;
+  const offset = (chartW - gap * data.length) / 2; // centres the bars while there are fewer than 6 months
   const bars = data.map((d,i)=>{
     const barH = (d.value / max) * chartH;
-    const x = padL + gap * i + (gap - barW)/2, y = padT + chartH - barH;
+    const x = padL + offset + gap * i + (gap - barW)/2, y = padT + chartH - barH;
     const label = d.value >= 100000 ? Math.round(d.value/1000) + 'k' : d.value.toLocaleString('en-US');
     return `<rect class="bar-track" x="${x}" y="${padT}" width="${barW}" height="${chartH}" rx="4"></rect>
       <rect class="bar-fill" x="${x}" y="${y}" width="${barW}" height="${barH}" rx="4"></rect>
@@ -543,8 +544,9 @@ function lineChart(data){
   const w = 320, h = 150, padL = 12, padR = 12, padB = 22, padT = 18;
   const chartW = w - padL - padR, chartH = h - padT - padB;
   const max = Math.max(...data.map(d=>d.value), 1) * 1.2;
-  const stepX = chartW / (data.length - 1 || 1);
-  const pts = data.map((d,i)=>({ x: padL + stepX*i, y: padT + chartH - (d.value/max)*chartH, ...d }));
+  const stepX = chartW / 5; // same spacing as a full 6 months, centred while there are fewer
+  const startX = padL + (chartW - stepX * (data.length - 1)) / 2;
+  const pts = data.map((d,i)=>({ x: startX + stepX*i, y: padT + chartH - (d.value/max)*chartH, ...d }));
   const line = pts.map((p,i)=>(i?'L':'M') + p.x.toFixed(1) + ' ' + p.y.toFixed(1)).join(' ');
   const area = line + ` L ${pts[pts.length-1].x.toFixed(1)} ${padT+chartH} L ${pts[0].x.toFixed(1)} ${padT+chartH} Z`;
   const dots = pts.map(p=>`<circle class="line-dot" cx="${p.x}" cy="${p.y}" r="3"></circle>
@@ -556,9 +558,16 @@ function lineChart(data){
     </linearGradient></defs>
     <path class="line-area" d="${area}"></path><path class="line-path" d="${line}"></path>${dots}</svg>`;
 }
+// The app started in September 2026, so the charts don't show empty months before that.
+// They grow a month at a time until they show the last 6 months.
+const CHARTS_START = new Date(2026, 8, 1); // September 2026 (months count from 0)
 function lastSixPeriods(){
   const out = [];
-  for(let i=5; i>=0; i--) out.push(periodKey(new Date(TODAY.getFullYear(), TODAY.getMonth()-i, 1)));
+  for(let i=5; i>=0; i--){
+    const d = new Date(TODAY.getFullYear(), TODAY.getMonth()-i, 1);
+    if(d >= CHARTS_START) out.push(periodKey(d));
+  }
+  if(!out.length) out.push(periodKey(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1))); // phone date set wrong
   return out;
 }
 
