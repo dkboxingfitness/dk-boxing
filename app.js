@@ -537,7 +537,7 @@ function lineChart(data){
     <text class="chart-axis-label" x="${p.x}" y="${h-6}" text-anchor="middle">${p.label}</text>`).join('');
   return `<svg class="chart-svg" viewBox="0 0 ${w} ${h}" role="img" aria-label="Line chart">
     <defs><linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#B3271E"></stop><stop offset="100%" stop-color="#B3271E" stop-opacity="0"></stop>
+      <stop offset="0%" stop-color="#FF5240"></stop><stop offset="100%" stop-color="#FF5240" stop-opacity="0"></stop>
     </linearGradient></defs>
     <path class="line-area" d="${area}"></path><path class="line-path" d="${line}"></path>${dots}</svg>`;
 }
