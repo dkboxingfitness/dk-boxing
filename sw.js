@@ -2,10 +2,10 @@
 // Lets the app open instantly and install to the home screen.
 // Always tries the network first so updates show up straight away;
 // falls back to the saved copy when offline. Data from Supabase is never cached.
-const CACHE = 'dk-app-v6';
+const CACHE = 'dk-app-v7';
 const FILES = [
   './', './index.html', './styles.css', './app.js', './config.js',
-  './vendor/supabase.js', './logo.jpg', './manifest.json',
+  './vendor/supabase.js', './logo.png', './manifest.json',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'
 ];
 

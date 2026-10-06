@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>DK Boxing Fitness</title>
 <meta name="description" content="DK Boxing Fitness roster and progress tracker." />
-<meta name="theme-color" content="#FAFAF8" media="(prefers-color-scheme: light)" />
-<meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#121212" />
+<meta name="color-scheme" content="dark" />
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icons/icon-192.png" type="image/png" />
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
@@ -17,12 +17,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css" />
-<script>
-  // Apply saved theme before the page paints, to avoid a flash of the wrong theme.
-  (function(){
-    try{ if(localStorage.getItem('dk-theme') === 'dark') document.documentElement.setAttribute('data-theme','dark'); }catch(e){}
-  })();
-</script>
 </head>
 <body>
 
@@ -30,12 +24,11 @@
 
 <div class="topbar">
   <a class="brand" href="#/">
-    <img src="logo.jpg" alt="DK Boxing Fitness" />
+    <img src="logo.png" alt="DK Boxing Fitness" />
     <div class="name">DK BOXING FITNESS<small>Member Tracker</small></div>
   </a>
   <div class="nav-links">
     <a href="#/">Roster</a>
-    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
     <a href="#/login" class="coach-btn" id="coachBtn" onclick="coachNav();return false;">Coach</a>
   </div>
 </div>

@@ -430,23 +430,6 @@ function coachNav(){ go(state.coach ? '#/dashboard/overview' : '#/login'); }
 function updateCoachButton(){ $('coachBtn').title = state.coach ? 'Open the coach dashboard' : 'Coach sign in'; }
 
 // =====================================================================
-// THEME
-// =====================================================================
-function updateThemeToggleIcon(){
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  $('themeToggle').textContent = isDark ? '☀️' : '🌙';
-}
-function toggleTheme(){
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  if(isDark) document.documentElement.removeAttribute('data-theme');
-  else document.documentElement.setAttribute('data-theme', 'dark');
-  try{ localStorage.setItem('dk-theme', isDark ? 'light' : 'dark'); }catch(e){}
-  updateThemeToggleIcon();
-  const topbar = document.querySelector('.topbar');
-  topbar.style.display = 'none'; void topbar.offsetHeight; topbar.style.display = '';
-}
-
-// =====================================================================
 // COACH SIGN IN / OUT
 // =====================================================================
 async function checkCoach(){
@@ -1263,7 +1246,6 @@ async function restoreSession(){
 }
 
 async function init(){
-  updateThemeToggleIcon();
   updateOnline();
   let ok = false;
   if(navigator.onLine){
